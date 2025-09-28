@@ -1,5 +1,6 @@
 package com.example.recyclerview;
 
+import android.app.Activity;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
@@ -16,6 +17,7 @@ import android.widget.Spinner;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
@@ -37,9 +39,10 @@ import java.util.ArrayList;
 public class MainActivity extends AppCompatActivity {
 
 
-    private static final int PICK_IMAGE_REQUEST = 1;
-    private static final int CAMERA_REQUEST = 2;
-    private Uri cameraImageUri;
+    private ActivityResultLauncher<Uri> cameraLauncher;
+    private Uri photoUri;
+    private ActivityResultLauncher<Intent> galleryLauncher;
+
     private ImageView selectedImageView;
     //This is a Test 1
 
@@ -60,6 +63,35 @@ public class MainActivity extends AppCompatActivity {
 
         setRecyclerView();
         setUpFloatingActionButton();
+
+        GalleryLauncher();
+        PhotoLauncher();
+    }
+    private void GalleryLauncher() {
+        galleryLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                        Uri imageUri = result.getData().getData();
+                        if (selectedImageView != null) {
+                            selectedImageView.setImageURI(imageUri);
+                            selectedImageView.setTag(imageUri);
+                        }
+                    }
+                }
+        );
+    }
+
+    private void PhotoLauncher() {
+        cameraLauncher = registerForActivityResult(
+                new ActivityResultContracts.TakePicture(),
+                result -> {
+                    if (result && selectedImageView != null) {
+                        selectedImageView.setImageURI(photoUri);
+                        selectedImageView.setTag(photoUri);
+                    }
+                }
+        );
     }
 
     private void setRecyclerView()
@@ -103,13 +135,25 @@ public class MainActivity extends AppCompatActivity {
                     View DialogEdit = getLayoutInflater().inflate(R.layout.dialog_edit_user, null);
                     EditText EditNameInput = DialogEdit.findViewById(R.id.nameInput);
                     EditText EditPasswordInput = DialogEdit.findViewById(R.id.passwordInput);
+                    Button Gallerybtn = DialogEdit.findViewById(R.id.gallery2);
+                    Button CameraBtn = DialogEdit.findViewById(R.id.camera);
                     ImageView EditImageView = DialogEdit.findViewById(R.id.imageView);
 
 
                     // Pre-fill user data
                     EditNameInput.setText(user.getName());
                     EditPasswordInput.setText(user.getPassword());
-                    EditImageView.setImageResource(user.getPic());
+                    // Pre-fill the picture
+                    Object pic = user.getPic();
+                    if (pic instanceof Integer) {
+                        EditImageView.setImageResource((Integer) pic);
+                    } else if (pic instanceof Uri) {
+                        EditImageView.setImageURI((Uri) pic);
+                    }
+                    EditImageView.setTag(pic);
+
+
+                    // Also keep the pic in tag so it can be updated if user changes it
                     EditImageView.setTag(user.getPic());
 
                     // ✅ Initialize spinner BEFORE showing the dialog
@@ -126,12 +170,16 @@ public class MainActivity extends AppCompatActivity {
 
                             String name = EditNameInput.getText().toString();
                             String password = EditPasswordInput.getText().toString();
-                            Object tag = EditImageView.getTag();
-                            int pic = (tag instanceof Integer) ? (Integer) tag : userList.get(position).getPic();
-
+                            Object tag = EditImageView.getTag(); // can be Integer or Uri
+                            Object pic = (tag != null) ? tag : userList.get(position).getPic();
 
                             if (!name.isEmpty() && !password.isEmpty()) {
-                                User updatedUser = new User(userList.get(position).getId(), name, password, pic);
+                                User updatedUser = new User(
+                                        userList.get(position).getId(),
+                                        name,
+                                        password,
+                                        pic
+                                );
                                 userList.set(position, updatedUser);
                                 userAdapter.notifyItemChanged(position);
                                 Toast.makeText(MainActivity.this, "User Updated: " + name, Toast.LENGTH_SHORT).show();
@@ -188,21 +236,25 @@ public class MainActivity extends AppCompatActivity {
                 EditText passwordInput = dialogView.findViewById(R.id.passwordInput);
                 ImageView imageView = dialogView.findViewById(R.id.imageView);
                 Button Gallerybtn = dialogView.findViewById(R.id.gallery);
-                Button Camera = dialogView.findViewById(R.id.Camera);
+                Button CameraBtn = dialogView.findViewById(R.id.Camera);
                 imageView.setImageResource(R.drawable.p1);
                 imageView.setTag(R.drawable.p1);
                 handleImageSelection(dialogView);
 
 
-                Camera.setOnClickListener(new View.OnClickListener() {
+                CameraBtn.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                        File photoFile = new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "temp.jpg");
-                        cameraImageUri = FileProvider.getUriForFile(MainActivity.this, getPackageName() + ".provider", photoFile);
-                        intent.putExtra(MediaStore.EXTRA_OUTPUT, cameraImageUri);
+                        File photoFile = new File(getFilesDir(), "photo.jpg");
+                        photoUri = FileProvider.getUriForFile(
+                                getApplicationContext(), // 👈 Use your activity's name here
+                                getApplicationContext().getPackageName() + ".provider",
+                                photoFile
+                        );
                         selectedImageView = imageView;
-                        startActivityForResult(intent, CAMERA_REQUEST);
+                        cameraLauncher.launch(photoUri);
+
+
                     }
                 });
 
@@ -214,7 +266,9 @@ public class MainActivity extends AppCompatActivity {
                         intent.setType("image/*");
                         intent.setAction(Intent.ACTION_GET_CONTENT);
                         selectedImageView = imageView; // Save reference for later
-                        startActivityForResult(Intent.createChooser(intent, "Select Picture"), PICK_IMAGE_REQUEST);
+                        galleryLauncher.launch(Intent.createChooser(intent, "Select Picture"));
+
+
                     }
                 });
 
@@ -233,9 +287,9 @@ public class MainActivity extends AppCompatActivity {
                         String name = nameInput.getText().toString();
                         String password = passwordInput.getText().toString();
 
-                        int pic = (int) imageView.getTag();
+                        Object picTag = imageView.getTag(); // can be Integer or Uri
                         if (!name.isEmpty() && !password.isEmpty()) {
-                            User newUser = new User(String.valueOf(userList.size() + 1), name, password, pic);
+                            User newUser = new User(String.valueOf(userList.size() + 1), name, password, picTag);
                             userList.add(newUser);
                             userAdapter.notifyItemInserted(userList.size() - 1);
                             recyclerView.scrollToPosition(userList.size() - 1);
@@ -293,24 +347,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
 
-        if (resultCode == RESULT_OK) {
-            if (requestCode == PICK_IMAGE_REQUEST && data != null && data.getData() != null) {
-                Uri imageUri = data.getData();
-                if (selectedImageView != null) {
-                    selectedImageView.setImageURI(imageUri);
-                    selectedImageView.setTag(imageUri); // Optional
-                }
-            } else if (requestCode == CAMERA_REQUEST) {
-                if (selectedImageView != null && cameraImageUri != null) {
-                    selectedImageView.setImageURI(cameraImageUri);
-                    selectedImageView.setTag(cameraImageUri); // Optional
-                }
-            }
-        }
-    }
+
 }
 

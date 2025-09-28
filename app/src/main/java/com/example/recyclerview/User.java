@@ -2,7 +2,7 @@ package com.example.recyclerview;
 
 public class User {
     private String id,name,password;
-    private int pic;
+    private Object pic;
 
     public void setId(String id) {
         this.id = id;
@@ -32,11 +32,11 @@ public class User {
         return password;
     }
 
-    public int getPic() {
+    public Object getPic() {
         return pic;
     }
 
-    public User(String id, String name, String password, int pic) {
+    public User(String id, String name, String password, Object pic) {
         this.id = id;
         this.name = name;
         this.password = password;

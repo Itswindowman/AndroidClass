@@ -36,24 +36,27 @@ public class UserAdaptar extends RecyclerView.Adapter<UserAdaptar.UserViewHolder
     @Override
     public void onBindViewHolder(@NonNull UserViewHolder holder, int position) {
         User user = userslist.get(position);
+
         holder.textViewName.setText(user.getName());
         holder.textViewPassword.setText(user.getPassword());
         holder.textViewId.setText(user.getId());
-        holder.imageViewPic.setImageResource(user.getPic());
 
-        if(position % 2 == 0)
-        {
-            holder.mainRow.setBackgroundColor(ContextCompat.getColor(mainActivity, R.color.white));
+        Object pic = user.getPic();
+        if (pic instanceof Integer) {
+            holder.imageViewPic.setImageResource((Integer) pic);
+        } else if (pic instanceof android.net.Uri) {
+            holder.imageViewPic.setImageURI((android.net.Uri) pic);
         }
-        else
-        {
+
+        if (position % 2 == 0) {
+            holder.mainRow.setBackgroundColor(ContextCompat.getColor(mainActivity, R.color.white));
+        } else {
             holder.mainRow.setBackgroundColor(ContextCompat.getColor(mainActivity, R.color.black));
         }
-
-
-
-
     }
+
+
+
 
     @Override
     public int getItemCount() {
