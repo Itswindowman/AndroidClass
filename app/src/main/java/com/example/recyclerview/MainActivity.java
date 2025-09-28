@@ -41,7 +41,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int CAMERA_REQUEST = 2;
     private Uri cameraImageUri;
     private ImageView selectedImageView;
-    //This is a Test
+    //This is a Test 1
 
     int selectedImageRedId;
     private final String[] userImages = {"p1","p2","p3","p4"};
