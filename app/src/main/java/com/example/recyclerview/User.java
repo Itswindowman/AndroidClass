@@ -16,7 +16,7 @@ public class User {
         this.password = password;
     }
 
-    public void setPic(int pic) {
+    public void setPic(Object pic) {
         this.pic = pic;
     }
 
