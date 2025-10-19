@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+
+    <item
+        android:id="@+id/nav_first"
+        android:icon="@drawable/outline_android_24"
+        android:title="users"   />
+
+    <item
+        android:id="@+id/nav_second"
+        android:icon="@drawable/outline_arrow_selector_tool_24"
+        android:title="xxx" />
+
+    <item
+        android:id="@+id/nav_third"
+        android:icon="@drawable/round_adb_24"
+        android:title="aaa"  />
+</menu>

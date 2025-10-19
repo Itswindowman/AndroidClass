@@ -13,6 +13,9 @@
         android:theme="@style/Theme.RecyclerView"
         tools:targetApi="31">
         <activity
+            android:name=".MainBottomNavigation"
+            android:exported="false" />
+        <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
@@ -31,7 +34,6 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
-
     </application>
 
 </manifest>
