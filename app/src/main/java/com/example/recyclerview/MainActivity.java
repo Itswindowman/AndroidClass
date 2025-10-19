@@ -129,81 +129,8 @@ public class MainActivity extends AppCompatActivity {
                             userList.remove(position);
                             userAdapter.notifyItemRemoved(position);
                         } else if (direction == ItemTouchHelper.RIGHT) {
-                            userAdapter.notifyItemChanged(position);
-
-                            View dialogEdit = getLayoutInflater().inflate(R.layout.dialog_edit_user, null);
-                            EditText editNameInput = dialogEdit.findViewById(R.id.nameInput);
-                            EditText editPasswordInput = dialogEdit.findViewById(R.id.passwordInput);
-                            Button galleryBtn = dialogEdit.findViewById(R.id.gallery2);
-                            Button cameraBtn = dialogEdit.findViewById(R.id.camera);
-                            ImageView editImageView = dialogEdit.findViewById(R.id.imageView);
-
-                            selectedImageView = editImageView;
-                            handleImageSelection(dialogEdit, user.getPic());
-
-
-                            cameraBtn.setOnClickListener(v1 -> {
-                                File photoFile = new File(getFilesDir(), "photo.jpg");
-                                photoUri = FileProvider.getUriForFile(
-                                        MainActivity.this,
-                                        getApplicationContext().getPackageName() + ".provider",
-                                        photoFile
-                                );
-                                selectedImageView = editImageView;
-                                cameraLauncher.launch(photoUri);
-                            });
-
-                            galleryBtn.setOnClickListener(v12 -> {
-                                Intent intent = new Intent();
-                                intent.setType("image/*");
-                                intent.setAction(Intent.ACTION_GET_CONTENT);
-                                selectedImageView = editImageView;
-                                galleryLauncher.launch(Intent.createChooser(intent, "Select Picture"));
-                            });
-
-                            // Pre-fill user data
-                            editNameInput.setText(user.getName());
-                            editPasswordInput.setText(user.getPassword());
-
-                            // Pre-fill picture
-                            Object pic = user.getPic();
-                            if (pic instanceof Integer) {
-                                editImageView.setImageResource((Integer) pic);
-                            } else if (pic instanceof Uri) {
-                                editImageView.setImageURI((Uri) pic);
-                            }
-                            editImageView.setTag(pic);
-
-                            AlertDialog.Builder build = new AlertDialog.Builder(MainActivity.this);
-                            build.setTitle("Edit User");
-                            build.setView(dialogEdit);
-
-                            build.setPositiveButton("Save", (dialog, which) -> {
-                                String name = editNameInput.getText().toString();
-                                String password = editPasswordInput.getText().toString();
-                                Object tag = editImageView.getTag();
-                                Object updatedPic = (tag != null) ? tag : userList.get(position).getPic();
-
-                                if (!name.isEmpty() && !password.isEmpty()) {
-                                    User updatedUser = new User(
-                                            userList.get(position).getId(),
-                                            name,
-                                            password,
-                                            updatedPic
-                                    );
-                                    userList.set(position, updatedUser);
-                                    userAdapter.notifyItemChanged(position);
-                                    Toast.makeText(MainActivity.this,
-                                            "User Updated: " + name, Toast.LENGTH_SHORT).show();
-                                } else {
-                                    Toast.makeText(MainActivity.this,
-                                            "Please Fill All Fields", Toast.LENGTH_SHORT).show();
-                                }
-                            });
-
-                            build.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
-                            build.setCancelable(true);
-                            build.show();
+                            userAdapter.notifyItemChanged(position); // reset swipe
+                            openEditUserDialog(position); // call the new method
                         }
                     }
 
@@ -338,6 +265,74 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onNothingSelected(AdapterView<?> parent) {}
         });
+    }
+
+    private void openEditUserDialog(int position) {
+        User user = userList.get(position);
+
+        View dialogEdit = getLayoutInflater().inflate(R.layout.dialog_edit_user, null);
+        EditText editNameInput = dialogEdit.findViewById(R.id.nameInput);
+        EditText editPasswordInput = dialogEdit.findViewById(R.id.passwordInput);
+        Button galleryBtn = dialogEdit.findViewById(R.id.gallery2);
+        Button cameraBtn = dialogEdit.findViewById(R.id.camera);
+        ImageView editImageView = dialogEdit.findViewById(R.id.imageView);
+
+        selectedImageView = editImageView;
+        handleImageSelection(dialogEdit, user.getPic());
+
+        // Pre-fill user data
+        editNameInput.setText(user.getName());
+        editPasswordInput.setText(user.getPassword());
+
+        // Gallery button
+        galleryBtn.setOnClickListener(v -> {
+            Intent intent = new Intent();
+            intent.setType("image/*");
+            intent.setAction(Intent.ACTION_GET_CONTENT);
+            selectedImageView = editImageView;
+            galleryLauncher.launch(Intent.createChooser(intent, "Select Picture"));
+        });
+
+        // Camera button
+        cameraBtn.setOnClickListener(v -> {
+            File photoFile = new File(getFilesDir(), "photo.jpg");
+            photoUri = FileProvider.getUriForFile(
+                    MainActivity.this,
+                    getApplicationContext().getPackageName() + ".provider",
+                    photoFile
+            );
+            selectedImageView = editImageView;
+            cameraLauncher.launch(photoUri);
+        });
+
+        AlertDialog.Builder build = new AlertDialog.Builder(MainActivity.this);
+        build.setTitle("Edit User");
+        build.setView(dialogEdit);
+
+        build.setPositiveButton("Save", (dialog, which) -> {
+            String name = editNameInput.getText().toString();
+            String password = editPasswordInput.getText().toString();
+            Object tag = editImageView.getTag();
+            Object updatedPic = (tag != null) ? tag : userList.get(position).getPic();
+
+            if (!name.isEmpty() && !password.isEmpty()) {
+                User updatedUser = new User(
+                        userList.get(position).getId(),
+                        name,
+                        password,
+                        updatedPic
+                );
+                userList.set(position, updatedUser);
+                userAdapter.notifyItemChanged(position);
+                Toast.makeText(MainActivity.this, "User Updated: " + name, Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(MainActivity.this, "Please Fill All Fields", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        build.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
+        build.setCancelable(true);
+        build.show();
     }
 
 }
